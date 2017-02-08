@@ -40,7 +40,6 @@ func (s *Server) DefaultHttpSender(m *indismq.Msg, c *Connection) error {
 
 //SendMessage ...
 func (s *Server) SendHttpMessage(m *indismq.Msg, Url *url.URL, headers http.Header) {
-
 	if m != nil && m.Data != nil {
 		if s.Imq.Debug {
 			t := schema.GetRootAsImq(*m.Data, 0)
@@ -54,15 +53,26 @@ func (s *Server) SendHttpMessage(m *indismq.Msg, Url *url.URL, headers http.Head
 		}
 		req.Header = headers
 		res, err := client.Do(req)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 		defer res.Body.Close()
 		body, err := ioutil.ReadAll(res.Body)
+		if body == nil || len(body) < 5 {
+			return
+		}
+		if res.StatusCode != http.StatusOK {
+			log.Println(string(body))
+			return
+		}
 		rm := indismq.ParseMsg(&body)
-		log.Println(body)
+
 		if rm == nil {
 			return
 		}
 		from := string(rm.Fields.From())
-		resp := s.Imq.RecieveMessage(m, from)
+		resp := s.Imq.RecieveMessage(rm, from)
 		if resp != nil {
 			defer s.SendHttpMessage(resp, Url, headers)
 		}
@@ -156,24 +166,31 @@ func (s *Server) receiveHttp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m := indismq.ParseMsg(&body)
+
 	from := string(m.Fields.From())
 	c := s.Connections[from]
 	if c == nil || len(c.User) < 1 {
 		conType := s.ConnectionTypes["http"]
 		if conType == nil {
 			log.Println("invalid connection type")
+			http.Error(w, "invalid Connection Type", http.StatusInternalServerError)
 			return
 		}
 		c = &Connection{User: from, ConnectionType: s.ConnectionTypes["http"]}
 	}
 	if c.ConnectionType.AuthHandler != nil {
-		c.ConnectionType.AuthHandler(r.Header)
+		if ok, err := c.ConnectionType.AuthHandler(r.Header); !ok || err != nil {
+			http.Error(w, "Auth Failed", http.StatusUnauthorized)
+			return
+		}
 	}
 	resp := s.Imq.RecieveMessage(m, c.User)
 	if resp != nil && resp.Data != nil && w != nil {
+		w.WriteHeader(http.StatusOK)
 		w.Write(*resp.Data)
 		return
 	}
+
 }
 
 //Listen ...

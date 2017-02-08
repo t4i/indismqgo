@@ -31,8 +31,9 @@ func (s *Server) NewConnection(name string, user string, connectionType string, 
 type ConnectionType struct {
 	Name          string
 	DefaultSender SenderFunc
-	AuthHandler   func(headers map[string][]string) (bool, error)
+	AuthHandler   AuthHandlerFunc
 }
+type AuthHandlerFunc func(headers http.Header) (bool, error)
 type SenderFunc func(m *indismq.Msg, c *Connection) error
 
 //Server ...
@@ -72,8 +73,8 @@ type Server struct {
 	OnClientDisconnected func(c *Connection)
 }
 
-func (s *Server) NewConnectionType(name string, defaultSender SenderFunc) {
-	s.ConnectionTypes[name] = &ConnectionType{Name: name, DefaultSender: defaultSender}
+func (s *Server) NewConnectionType(name string, defaultSender SenderFunc, authHandler AuthHandlerFunc) {
+	s.ConnectionTypes[name] = &ConnectionType{Name: name, DefaultSender: defaultSender, AuthHandler: authHandler}
 }
 
 //NewServer ...
@@ -85,7 +86,6 @@ func NewServer(name string) *Server {
 	s.Connections = make(map[string]*Connection)
 	s.upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }} // use default options
 	s.sendLocks = make(map[*websocket.Conn]*sync.Mutex)
-	s.NewConnectionType("ws", s.DefaultWsSender)
 	s.Imq.SetName(name)
 	s.Imq.SetRelayHandler(s.relayHandler)
 	s.Imq.SetBrokerHandler(s.brokerHandler)
