@@ -9,12 +9,13 @@ import (
 
 type Queue struct {
 	sync.RWMutex
-	Handler   Handler
-	queue     []*MsgCon
-	dequeue   map[string]*MsgCon
-	reply     map[string]*MsgCon
-	prefetch  int
-	container *Queues
+	Handler     Handler
+	queue       []*MsgCon
+	dequeue     map[string]*MsgCon
+	reply       map[string]*MsgCon
+	prefetch    int
+	container   *Queues
+	processLock sync.Mutex
 }
 
 //MsgCon a struct with a MsgBuffer and Connection related to it
@@ -191,8 +192,8 @@ func (ctx *Context) ProcessNext(q *Queue, conn Connection) {
 
 	for (q.prefetch > 0 && len(q.dequeue) < q.prefetch) || len(q.queue) > 0 {
 
-		q.Lock()
-		defer q.Unlock()
+		q.processLock.Lock()
+		defer q.processLock.Unlock()
 		next := q.Peek()
 		if q.Handler != nil {
 			m := q.Pop()
