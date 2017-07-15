@@ -14,7 +14,7 @@ func main() {
 	srv := broker.NewBroker("srv")
 	// Create A Handler for the /test path
 	done := make(chan bool)
-	srv.Handlers.Set("/test", func(m *indismqgo.MsgBuffer, c *indismqgo.ConnRef) error {
+	srv.Handlers.Set("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
 		//defer wg.Done()
 		done <- true
 		return nil

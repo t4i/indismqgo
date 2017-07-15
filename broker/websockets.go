@@ -31,15 +31,20 @@ const (
 
 type WsConn struct {
 	Context *indismq.Context
+	Broker  *Broker
 	*websocket.Conn
 	sync.Mutex
 	queue []*indismq.MsgBuffer
+	*indismq.ConnEvents
 }
 
+var DefaultWsConnEvents *indismq.ConnEvents
+
 func (b *Broker) NewWsConnection(ws *websocket.Conn) *WsConn {
-	conn := &WsConn{Context: b.Context}
+	conn := &WsConn{Context: b.Context, Broker: b}
 	conn.Conn = ws
 	conn.queue = []*indismq.MsgBuffer{}
+	conn.ConnEvents = DefaultWsConnEvents
 	return conn
 }
 
@@ -87,6 +92,12 @@ func (conn *WsConn) Send(m *indismq.MsgBuffer) error {
 		conn.queue = append(conn.queue, m)
 	}
 	return nil
+}
+
+func (conn *WsConn) Events() *indismq.ConnEvents {
+
+	return conn.ConnEvents
+
 }
 
 // func (s *Broker) onWsConnected(ws *wsConn) {
@@ -141,7 +152,7 @@ func (s *Broker) ConnectWebsocket(URL *url.URL, header http.Header, ws *WsConn, 
 	//s.onWsConnected(ws)
 	recieveQuit := make(chan bool)
 	go s.recieveWs(ws, recieveQuit)
-	connectMsg, err := s.Context.Connection(nil, nil, func(m *indismq.MsgBuffer, c indismq.Connection) error {
+	connectMsg, err := s.Context.NewConnectionMsg(nil, nil, func(m *indismq.MsgBuffer, c indismq.Connection) error {
 		if m.Fields.Status() >= 200 && m.Fields.Status() < 300 {
 			from := string(m.Fields.From())
 			if s.Context.Debug {
@@ -277,7 +288,7 @@ func (s *Broker) upgrade(w http.ResponseWriter, r *http.Request) {
 	}
 	recieveQuit := make(chan bool)
 	go s.recieveWs(ws, recieveQuit)
-	connectMsg, err := s.Context.Connection(nil, nil, func(m *indismq.MsgBuffer, c indismq.Connection) error {
+	connectMsg, err := s.Context.NewConnectionMsg(nil, nil, func(m *indismq.MsgBuffer, c indismq.Connection) error {
 		if s.Debug {
 			log.Print(m.String())
 		}

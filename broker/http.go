@@ -31,10 +31,18 @@ type HttpConn struct {
 	URL     *url.URL
 	Headers http.Header
 	Context *indismq.Context
+	Broker  *Broker
+	*indismq.ConnEvents
 }
 
+// type ConnEvents struct {
+// 	OnConnect    func(key string, conn Connection)
+// 	OnDisconnect func(key string, conn Connection)
+// }
+var DefaultHttpConnEvents *indismq.ConnEvents
+
 func (s *Broker) NewHttpConn(URL *url.URL, headers http.Header) *HttpConn {
-	conn := &HttpConn{URL: URL, Headers: headers, Context: s.Context}
+	conn := &HttpConn{URL: URL, Headers: headers, Context: s.Context, Broker: s, ConnEvents: DefaultHttpConnEvents}
 	return conn
 }
 func (conn *HttpConn) VerifyConnectionRequest(m *indismq.MsgBuffer) error {
@@ -103,13 +111,30 @@ func (conn *HttpConn) Send(m *indismq.MsgBuffer) error {
 	return nil
 }
 
+func (conn *HttpConn) Events() *indismq.ConnEvents {
+	return conn.ConnEvents
+
+}
+
+// func (conn *HttpConn) OnConnect(key string) {
+// 	if conn.Broker.OnHttpConnect != nil {
+// 		conn.Broker.OnHttpConnect(key, conn)
+// 	}
+// }
+
+// func (conn *HttpConn) OnDisconnect(key string) {
+// 	if conn.Broker.OnHttpDisconnect != nil {
+// 		conn.Broker.OnHttpDisconnect(key, conn)
+// 	}
+// }
+
 //var httpConnType = &indismq.ConnType{}
 
 //Connect ...
 func (s *Broker) ConnectHttp(conn *HttpConn) (ok bool, err error) {
 	//conn := s.Context.NewConnType(s.SendHttpMessage, indismq.ConnClassHalfDuplex)
 
-	connectMsg, err := s.Context.Connection(nil, nil, func(m *indismq.MsgBuffer, c indismq.Connection) error {
+	connectMsg, err := s.Context.NewConnectionMsg(nil, nil, func(m *indismq.MsgBuffer, c indismq.Connection) error {
 
 		if m.Fields.Status() >= 200 && m.Fields.Status() <= 300 {
 			s.Context.Connections.Set(string(m.Fields.From()), conn)
