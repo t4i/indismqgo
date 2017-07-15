@@ -7,6 +7,12 @@ import ()
 //ConnectionRequest
 type Connection interface {
 	Send(m *MsgBuffer) error
+	Events() *ConnEvents
+}
+
+type ConnEvents struct {
+	OnConnect    func(key string, conn Connection)
+	OnDisconnect func(key string, conn Connection)
 }
 
 // func (ctx *Context) NewConnection(isDuplex bool) *Connection {

@@ -40,12 +40,21 @@ func (cs *Connections) Set(key string, val Connection) {
 	cs.lock.Lock()
 	cs.connections[key] = val
 	cs.lock.Unlock()
+	if ev := val.Events(); ev != nil && ev.OnConnect != nil {
+		ev.OnConnect(key, val)
+	}
 
 }
 func (cs *Connections) Del(key string) {
-	cs.lock.Lock()
-	delete(cs.connections, key)
-	cs.lock.Unlock()
+	if val := cs.Get(key); val != nil {
+		cs.lock.Lock()
+		delete(cs.connections, key)
+		cs.lock.Unlock()
+		if ev := val.Events(); ev != nil && ev.OnDisconnect != nil {
+			ev.OnDisconnect(key, val)
+		}
+	}
+
 }
 func (cs *Connections) Length() (l int) {
 	cs.lock.RLock()

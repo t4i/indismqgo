@@ -5,33 +5,33 @@ package indismqgo
 const (
 	ActionACK         = 0
 	ActionGET         = 1
-	ActionRESPONSE    = 2
-	ActionSET         = 3
-	ActionNEW         = 4
-	ActionAPPEND      = 5
-	ActionREPLACE     = 6
-	ActionUPDATE      = 7
-	ActionDELETE      = 8
-	ActionCAST        = 9
-	ActionSUBSCRIBE   = 10
-	ActionUNSUBSCRIBE = 11
-	ActionCONNECT     = 12
-	ActionJOIN        = 13
+	ActionHEAD        = 2
+	ActionPOST        = 3
+	ActionPUT         = 4
+	ActionDELETE      = 5
+	ActionCONNECT     = 6
+	ActionOPTIONS     = 7
+	ActionTRACE       = 8
+	ActionPATCH       = 9
+	ActionRESPONSE    = 10
+	ActionSUBSCRIBE   = 11
+	ActionUNSUBSCRIBE = 12
+	ActionCAST        = 13
 )
 
 var EnumNamesAction = map[int]string{
 	ActionACK:         "ACK",
 	ActionGET:         "GET",
-	ActionRESPONSE:    "RESPONSE",
-	ActionSET:         "SET",
-	ActionNEW:         "NEW",
-	ActionAPPEND:      "APPEND",
-	ActionREPLACE:     "REPLACE",
-	ActionUPDATE:      "UPDATE",
+	ActionHEAD:        "HEAD",
+	ActionPOST:        "POST",
+	ActionPUT:         "PUT",
 	ActionDELETE:      "DELETE",
-	ActionCAST:        "CAST",
+	ActionCONNECT:     "CONNECT",
+	ActionOPTIONS:     "OPTIONS",
+	ActionTRACE:       "TRACE",
+	ActionPATCH:       "PATCH",
+	ActionRESPONSE:    "RESPONSE",
 	ActionSUBSCRIBE:   "SUBSCRIBE",
 	ActionUNSUBSCRIBE: "UNSUBSCRIBE",
-	ActionCONNECT:     "CONNECT",
-	ActionJOIN:        "JOIN",
+	ActionCAST:        "CAST",
 }

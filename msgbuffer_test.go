@@ -40,6 +40,15 @@ func (tc *testConn) Send(m *MsgBuffer) error {
 	return nil
 }
 
+func (conn *testConn) Events() *ConnEvents{
+	return nil
+}
+func (conn *testConn) OnConnect(key string) {
+
+}
+func (conn *testConn) OnDisconnect(key string) {
+
+}
 func TestNewMsgBuffer(t *testing.T) {
 	//check fields
 	if string(m.Fields.MsgId()) != "messageid" {
