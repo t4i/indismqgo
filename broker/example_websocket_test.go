@@ -3,6 +3,7 @@ package broker
 import (
 	"fmt"
 	"github.com/t4i/indismqgo"
+	"github.com/t4i/indismqgo/broker/websocket"
 	"log"
 	"net/url"
 	"sync"
@@ -15,31 +16,41 @@ func Example_websocket() {
 	srv := NewBroker("srv")
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-
+	// DefaultWsConnEvents.OnMessage = func(m *indismqgo.MsgBuffer, ws *WsConn) bool {
+	// 	log.Println("OnMessage", string(m.Fields.From()), string(m.Fields.BodyBytes()))
+	// 	return true
+	// }
+	// DefaultWsConnEvents.OnConnected = func(m *indismqgo.MsgBuffer, ws *WsConn) bool {
+	// 	log.Println("OnConnected", string(m.Fields.From()), string(m.Fields.BodyBytes()))
+	// 	return true
+	// }
 	// Create A Handler for the /test path
-	srv.Handlers.Set("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
+	srv.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
 		defer wg.Done()
+		time.Sleep(time.Millisecond * 10)
 		if string(m.Fields.From()) != "client" {
 			log.Fatal("Message Error")
 		}
-		fmt.Println("Recieved", string(m.Fields.BodyBytes()))
+		fmt.Println("Test Called")
 		return nil
 	})
-	go srv.ListenWebSocket("/", 8080)
+	go websocket.ListenWebSocket(srv, "/", 8080, nil)
+	time.Sleep(time.Millisecond * 100)
 	//
 	//Create a Client
 	client := NewBroker("client")
 
 	//connect to the server
 	u, _ := url.Parse("ws://localhost:8080")
-	conn, err := client.ConnectWebsocket(u, nil, nil, client.AutoWsReconnect)
+	conn, err := websocket.ConnectWebsocket(client, u, nil, nil, true)
 	if err != nil {
 		log.Fatal(err)
 	}
 	if conn == nil {
+
 		log.Fatal("empty connection")
 	}
-
+	time.Sleep(time.Millisecond * 100)
 	//send the server a test message
 	m, err := client.NewMsgObject("srv", indismqgo.ActionGET, "/test", []byte("Hello From Client"), nil).ToBuffer()
 	if err != nil {
@@ -54,6 +65,6 @@ func Example_websocket() {
 	}
 
 	//Output:
-	//Recieved Hello From Client
+	//Test Called
 
 }

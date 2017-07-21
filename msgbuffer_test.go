@@ -2,6 +2,7 @@ package indismqgo
 
 import (
 	"errors"
+	"github.com/t4i/indismqgo/schema/IndisMQ"
 	"log"
 	"testing"
 )
@@ -13,7 +14,7 @@ func init() {
 	m, err = NewMsgBuffer(
 		[]byte("messageid"), 1, 2, []byte("to"), []byte("from"), []byte("path"),
 		[]byte("authorization"), []byte("body"), map[string]string{"key": "value"},
-		func(msg *MsgBuffer, conn Connection) error {
+		func(msg *MsgBuffer, conn Sender) error {
 			if msg != m {
 				return errors.New("msg not equal in callback")
 			}
@@ -40,9 +41,6 @@ func (tc *testConn) Send(m *MsgBuffer) error {
 	return nil
 }
 
-func (conn *testConn) Events() *ConnEvents{
-	return nil
-}
 func (conn *testConn) OnConnect(key string) {
 
 }
@@ -78,7 +76,7 @@ func TestNewMsgBuffer(t *testing.T) {
 	if m.Fields.MetaLength() != 1 {
 		t.Error("Meta not set")
 	} else {
-		meta := new(KeyVal)
+		meta := new(IndisMQ.KeyVal)
 		if !m.Fields.Meta(meta, 0) {
 			t.Error("Error retrieving meta")
 		} else {

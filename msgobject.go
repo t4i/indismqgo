@@ -23,6 +23,4 @@ func (o *MsgObject) ToBuffer() (*MsgBuffer, error) {
 	return NewMsgBuffer([]byte(o.MsgID), o.Action, o.Status, []byte(o.To), []byte(o.From), []byte(o.Path), []byte(o.Authorization), o.Body, o.Meta, o.Callback)
 }
 
-func (ctx *Context) NewMsgObject(to string, action int8, path string, body []byte, callback Handler) *MsgObject {
-	return &MsgObject{MsgID: string(NewRandID()), Action: action, To: to, Path: path, From: string(ctx.Name), Body: body, Callback: callback}
-}
+

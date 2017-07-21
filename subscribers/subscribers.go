@@ -1,8 +1,11 @@
-package indismqgo
+package subscribers
 
 import (
+	"github.com/t4i/indismqgo"
 	"sync"
 )
+
+var _ indismqgo.SubscriberStore = (*Subscribers)(nil)
 
 type Subscribers struct {
 	subscribers map[string]map[string]bool
@@ -13,18 +16,24 @@ func NewSubscribers() *Subscribers {
 	return &Subscribers{subscribers: make(map[string]map[string]bool)}
 }
 
-func (ss *Subscribers) Get(key string) map[string]bool {
+func (ss *Subscribers) GetSubscriberList(key string) map[string]bool {
 	ss.RLock()
 	m := ss.subscribers[key]
 	ss.RUnlock()
 	return m
 }
-func (ss *Subscribers) Set(key string, val map[string]bool) {
+func (ss *Subscribers) SetSubscriber(key string, val map[string]bool) {
 	ss.Lock()
 	ss.subscribers[key] = val
 	ss.Unlock()
 }
-func (ss *Subscribers) Del(key string) {
+func (ss *Subscribers) AddChannel(key string) {
+	ss.Lock()
+	ss.subscribers[key] = map[string]bool{}
+	ss.Unlock()
+}
+
+func (ss *Subscribers) DelChannel(key string) {
 	ss.Lock()
 	delete(ss.subscribers, key)
 	ss.Unlock()
@@ -64,7 +73,6 @@ func (ss *Subscribers) DelSubscriber(client string, path string) {
 
 //DelSubscriberAll ...
 func (ss *Subscribers) DelSubscriberAll(client string) {
-
 	for k := range ss.subscribers {
 		ss.DelSubscriber(client, k)
 	}

@@ -3,6 +3,8 @@ package broker
 import (
 	"fmt"
 	"github.com/t4i/indismqgo"
+	"github.com/t4i/indismqgo/broker/http"
+	"github.com/t4i/indismqgo/broker/websocket"
 	"log"
 	"net/url"
 	"sync"
@@ -10,25 +12,31 @@ import (
 )
 
 func Example_brokerWebsocketHttp() {
-	log.SetFlags(log.Llongfile)
+
 	// Create A Server
 	debug := false
+	if debug {
+		log.SetFlags(log.Llongfile)
+	}
 	srv := NewBroker("srv")
-	srv.Context.Debug = debug
-	srv.Debug = debug
+	srv.Debug(&debug)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	go srv.ListenWebSocket("/", 8085)
-	go srv.ListenHttp("/", 8086)
+	go websocket.ListenWebSocket(srv, "/", 8085, nil)
+	go http.ListenHttp(srv, "/", 8086, nil)
 	//
-	//Create a Client
+	//Create a Clientd
 	client := NewBroker("client1")
-	client.Debug = debug
-	client.Context.Debug = debug
+	client.Debug(&debug)
 	//connect to the server
 	u, _ := url.Parse("ws://localhost:8085")
-	client.ConnectWebsocket(u, nil, nil, client.AutoWsReconnect)
-	client.Handlers.Set("/test", func(m *indismqgo.MsgBuffer, conn indismqgo.Connection) error {
+	client1Conn, _ := websocket.ConnectWebsocket(client, u, nil, nil, true)
+
+	if m, err := client.NewConnectionMsg(nil, nil, nil); err == nil {
+		client1Conn.Send(m)
+	}
+
+	client.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, conn indismqgo.Sender) error {
 		if string(m.Fields.From()) != "client2" {
 			log.Fatal("Client Message Error")
 		}
@@ -50,13 +58,17 @@ func Example_brokerWebsocketHttp() {
 	//
 	//Create a Second Client on HTTP
 	client2 := NewBroker("client2")
-	client2.Debug = debug
-	client2.Context.Debug = debug
+	client2.Debug(&debug)
 	u2, _ := url.Parse("http://localhost:8086")
-	conn2 := client2.NewHttpConn(u2, nil)
-
+	conn2 := http.NewHttpConn(client2, u2, nil, nil)
+	if m, err := client2.NewConnectionMsg(nil, nil, nil); err == nil {
+		if err := conn2.Send(m); err != nil {
+			log.Println(err)
+		}
+	}
+	//http.ConnectHttp(client2, conn2)
 	//send the server a test message to client 1 and expect a reply
-	m, _ := client2.NewMsgObject("client1", indismqgo.ActionGET, "/test", []byte("Hello From Client 2"), func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
+	m, _ := client2.NewMsgObject("client1", indismqgo.ActionGET, "/test", []byte("Hello From Client 2"), func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
 		defer wg.Done()
 		if string(m.Fields.From()) != "client1" {
 			log.Fatal("Message Error")
@@ -65,7 +77,7 @@ func Example_brokerWebsocketHttp() {
 		return nil
 	}).ToBuffer()
 	conn2.Send(m)
-	if indismqgo.WaitTimeout(&wg, 10*time.Second) {
+	if indismqgo.WaitTimeout(&wg, 2*time.Second) {
 		log.Fatal("timeout")
 	}
 	//Output:

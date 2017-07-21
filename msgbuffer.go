@@ -3,16 +3,17 @@ package indismqgo
 import (
 	"fmt"
 	fb "github.com/google/flatbuffers/go"
+	"github.com/t4i/indismqgo/schema/IndisMQ"
 )
 
 //Msg ... Imq.Msg.rawData Imq.Msg.
 type MsgBuffer struct {
 	Data      []byte
-	Fields    *Imq
+	Fields    *IndisMQ.Imq
 	Callback  Handler
-	timestamp int64
+	Timestamp int64
 	meta      map[string]string
-	Context   *Context
+	Context   Context
 }
 
 //Meta read only access to metadata
@@ -31,7 +32,7 @@ func parseMeta(m *MsgBuffer) {
 	if l := m.Fields.MetaLength(); l > 0 {
 		m.meta = make(map[string]string)
 		for i := 0; i < l; i++ {
-			meta := new(KeyVal)
+			meta := new(IndisMQ.KeyVal)
 			if m.Fields.Meta(meta, i) {
 				m.meta[string(meta.Key())] = string(meta.Value())
 			}
@@ -87,47 +88,47 @@ func NewMsgBuffer(msgId []byte, action int8, status uint16, to []byte, from []by
 		for k, v := range meta {
 			keyOffset := builder.CreateString(k)
 			valOffset := builder.CreateString(v)
-			KeyValStart(builder)
-			KeyValAddKey(builder, keyOffset)
-			KeyValAddValue(builder, valOffset)
-			metaOffsets = append(metaOffsets, KeyValEnd(builder))
+			IndisMQ.KeyValStart(builder)
+			IndisMQ.KeyValAddKey(builder, keyOffset)
+			IndisMQ.KeyValAddValue(builder, valOffset)
+			metaOffsets = append(metaOffsets, IndisMQ.KeyValEnd(builder))
 		}
 		l := len(metaOffsets)
-		ImqStartMetaVector(builder, l)
+		IndisMQ.ImqStartMetaVector(builder, l)
 		for i := 0; i < l; i++ {
 			builder.PrependUOffsetT(metaOffsets[i])
 		}
 		metaOffset = builder.EndVector(l)
 	}
-	ImqStart(builder)
-	ImqAddMsgId(builder, msgIDOffset)
-	ImqAddAction(builder, action)
-	ImqAddStatus(builder, status)
-	ImqAddTo(builder, toOffset)
-	ImqAddFrom(builder, fromOffset)
-	ImqAddPath(builder, pathOffset)
-	ImqAddAuthorization(builder, authorizationOffset)
-	ImqAddBody(builder, bodyOffset)
-	ImqAddMeta(builder, metaOffset)
+	IndisMQ.ImqStart(builder)
+	IndisMQ.ImqAddMsgId(builder, msgIDOffset)
+	IndisMQ.ImqAddAction(builder, action)
+	IndisMQ.ImqAddStatus(builder, status)
+	IndisMQ.ImqAddTo(builder, toOffset)
+	IndisMQ.ImqAddFrom(builder, fromOffset)
+	IndisMQ.ImqAddPath(builder, pathOffset)
+	IndisMQ.ImqAddAuthorization(builder, authorizationOffset)
+	IndisMQ.ImqAddBody(builder, bodyOffset)
+	IndisMQ.ImqAddMeta(builder, metaOffset)
 	if callback != nil {
-		ImqAddCallback(builder, 1)
+		IndisMQ.ImqAddCallback(builder, 1)
 		m.Callback = callback
 	}
-	rpc := ImqEnd(builder)
+	rpc := IndisMQ.ImqEnd(builder)
 	builder.Finish(rpc)
 	buf := builder.FinishedBytes()
 	m.Data = buf
-	m.Fields = GetRootAsImq(buf, 0)
+	m.Fields = IndisMQ.GetRootAsImq(buf, 0)
 	return m, nil
 }
 
 //ParseMsg ...
-func ParseMsg(data []byte, ctx *Context) (m *MsgBuffer) {
+func ParseMsg(data []byte, ctx Context) (m *MsgBuffer) {
 	if data == nil {
 		return nil
 	}
 	m = &MsgBuffer{}
-	m.Fields = GetRootAsImq(data, 0)
+	m.Fields = IndisMQ.GetRootAsImq(data, 0)
 	m.Data = data
 	m.Context = ctx
 	return

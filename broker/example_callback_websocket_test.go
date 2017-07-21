@@ -3,6 +3,7 @@ package broker
 import (
 	"fmt"
 	"github.com/t4i/indismqgo"
+	"github.com/t4i/indismqgo/broker/websocket"
 	"log"
 	"net/url"
 	"sync"
@@ -17,7 +18,7 @@ func Example_callbackWebsocket() {
 	wg.Add(1)
 
 	// Create A Handler for the /test path
-	srv.Handlers.Set("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
+	srv.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
 		if string(m.Fields.From()) != "client" {
 			log.Fatal("Message Error")
 		}
@@ -36,14 +37,14 @@ func Example_callbackWebsocket() {
 		time.Sleep(1 * time.Second)
 		return nil
 	})
-	go srv.ListenWebSocket("/", 8084)
+	go websocket.ListenWebSocket(srv, "/", 8084, nil)
 	//
 	//Create a Client
 	client := NewBroker("client")
 
 	//connect to the server
 	u, _ := url.Parse("ws://localhost:8084")
-	conn, err := client.ConnectWebsocket(u, nil, nil, client.AutoWsReconnect)
+	conn, err := websocket.ConnectWebsocket(client, u, nil, nil, true)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,7 +53,7 @@ func Example_callbackWebsocket() {
 	}
 
 	//send the server a test message with a callback from the server
-	m, err := client.NewMsgObject("srv", indismqgo.ActionGET, "/test", []byte("Hello From Client"), func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
+	m, err := client.NewMsgObject("srv", indismqgo.ActionGET, "/test", []byte("Hello From Client"), func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
 		defer wg.Done()
 		if string(m.Fields.From()) != "srv" {
 			log.Fatal("Message Error")

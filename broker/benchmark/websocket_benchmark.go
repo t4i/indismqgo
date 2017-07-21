@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/t4i/indismqgo"
 	"github.com/t4i/indismqgo/broker"
+	"github.com/t4i/indismqgo/broker/websocket"
 	"log"
 	"net/url"
 	"time"
@@ -14,12 +15,12 @@ func main() {
 	srv := broker.NewBroker("srv")
 	// Create A Handler for the /test path
 	done := make(chan bool)
-	srv.Handlers.Set("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
+	srv.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
 		//defer wg.Done()
 		done <- true
 		return nil
 	})
-	go srv.ListenWebSocket("/", 8085)
+	go websocket.ListenWebSocket(srv, "/", 8085, nil)
 	//
 	//Create a Client
 	client := broker.NewBroker("client")
@@ -27,7 +28,7 @@ func main() {
 	//connect to the server
 
 	u, _ := url.Parse("ws://localhost:8085")
-	conn, err := client.ConnectWebsocket(u, nil, nil, nil)
+	conn, err := websocket.ConnectWebsocket(client, u, nil, nil, false)
 
 	if err != nil {
 		log.Fatal(err)
@@ -39,7 +40,6 @@ func main() {
 	start := time.Now()
 	for i := 0; i < quant; i++ {
 		m, _ := client.NewMsgObject("srv", indismqgo.ActionGET, "/test", []byte("Hello From Client Benchmark"), nil).ToBuffer()
-
 		conn.Send(m)
 		<-done
 	}

@@ -1,4 +1,4 @@
-package indismqgo
+package subscribers
 
 import (
 	"testing"
@@ -14,7 +14,7 @@ func TestNewSubscribers(t *testing.T) {
 func TestSubscriberGet(t *testing.T) {
 	s := Subscribers{}
 	s.subscribers = map[string]map[string]bool{"test": map[string]bool{"test1": true}}
-	testmap := s.Get("test")
+	testmap := s.GetSubscriberList("test")
 	if val, ok := testmap["test1"]; !ok {
 		t.Error("Error retrieving map")
 	} else if !val {
@@ -24,7 +24,7 @@ func TestSubscriberGet(t *testing.T) {
 
 func TestSubscriberSet(t *testing.T) {
 	s := Subscribers{subscribers: make(map[string]map[string]bool)}
-	s.Set("test", map[string]bool{"test1": true})
+	s.SetSubscriber("test", map[string]bool{"test1": true})
 	if val, ok := s.subscribers["test"]; !ok {
 		t.Error("Error setting map")
 	} else if val2, ok := val["test1"]; !ok {
@@ -41,10 +41,10 @@ func TestSubscriberDel(t *testing.T) {
 		t.Error("Error in test Setup")
 	} else {
 		l1 := len(s.subscribers)
-		s.Del("test")
+		s.DelSubscriberAll("test1")
 		l2 := len(s.subscribers)
 		if _, ok := s.subscribers["test"]; ok || l1 <= l2 {
-			t.Error("Del method not working")
+			t.Error("Del method not working", l1, l2)
 		}
 
 	}

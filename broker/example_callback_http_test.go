@@ -3,6 +3,7 @@ package broker
 import (
 	"fmt"
 	"github.com/t4i/indismqgo"
+	"github.com/t4i/indismqgo/broker/http"
 	"log"
 	"net/url"
 	"sync"
@@ -10,13 +11,17 @@ import (
 )
 
 func Example_callbackHTTP() {
-
+	debug := false
+	if debug {
+		log.SetFlags(log.Llongfile)
+	}
 	// Create A Server
 	srv := NewBroker("srv")
+	srv.Debug(&debug)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	// Create A Handler for the /test path
-	srv.Handlers.Set("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
+	srv.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
 		if string(m.Fields.From()) != "client" {
 			log.Fatal("Client Message Error")
 		}
@@ -35,19 +40,20 @@ func Example_callbackHTTP() {
 
 		return nil
 	})
-	go srv.ListenHttp("/", 8082)
+	go http.ListenHttp(srv, "/", 8082, nil)
 	//
 	//Create a Client
 	client := NewBroker("client")
+	client.Debug(&debug)
 	//connect to the server
 	u, _ := url.Parse("http://localhost:8082")
-	conn := client.NewHttpConn(u, nil)
+	conn := http.NewHttpConn(client, u, nil, nil)
 	if conn == nil {
 		log.Fatal("empty http Connection")
 	}
 
 	//send the server a test message
-	m, err := client.NewMsgObject("srv", indismqgo.ActionGET, "/test", []byte("Hello From Client"), func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
+	m, err := client.NewMsgObject("srv", indismqgo.ActionGET, "/test", []byte("Hello From Client"), func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
 		defer wg.Done()
 		if string(m.Fields.From()) != "srv" {
 			log.Fatal("Server Message Error")
@@ -63,7 +69,7 @@ func Example_callbackHTTP() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if indismqgo.WaitTimeout(&wg, 10*time.Second) {
+	if indismqgo.WaitTimeout(&wg, 5*time.Second) {
 		log.Fatal("timeout")
 	}
 
