@@ -47,11 +47,11 @@ func (q *Queues) DelQueue(key string) {
 func (q *Queues) ProcessQueue(key string) {
 
 }
-func (q *Queues) AckQueue(key string, conn indismqgo.Sender) {
+func (q *Queues) AckQueue(key string, conn indismqgo.Connection) {
 
 }
 
-// func (q *Queues) PutQueue(msg *indismqgo.MsgBuffer, conn indismqgo.Sender) (queue *Queue) {
+// func (q *Queues) PutQueue(msg *indismqgo.MsgBuffer, conn indismqgo.Connection) (queue *Queue) {
 // 	q.Lock()
 // 	ok := false
 // 	queueName := string(msg.Fields.To())

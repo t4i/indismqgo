@@ -18,7 +18,7 @@ func Example_callbackWebsocket() {
 	wg.Add(1)
 
 	// Create A Handler for the /test path
-	srv.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
+	srv.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
 		if string(m.Fields.From()) != "client" {
 			log.Fatal("Message Error")
 		}
@@ -53,7 +53,7 @@ func Example_callbackWebsocket() {
 	}
 
 	//send the server a test message with a callback from the server
-	m, err := client.NewMsgObject("srv", indismqgo.ActionGET, "/test", []byte("Hello From Client"), func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
+	m, err := client.NewMsgObject("srv", indismqgo.ActionGET, "/test", []byte("Hello From Client"), func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
 		defer wg.Done()
 		if string(m.Fields.From()) != "srv" {
 			log.Fatal("Message Error")

@@ -19,7 +19,7 @@ func main() {
 	client.Debug(&debug)
 	u, _ := url.Parse("ws://localhost:8080")
 	conn, _ := websocket.ConnectWebsocket(client, u, nil, nil, false)
-	m, _ := client.NewMsgObject("", indismqgo.ActionGET, "/test", nil, func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
+	m, _ := client.NewMsgObject("", indismqgo.ActionGET, "/test", nil, func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
 		//defer wg.Done()
 
 		log.Println("Recieved", string(m.Fields.BodyBytes()))

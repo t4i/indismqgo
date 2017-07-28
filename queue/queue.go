@@ -20,11 +20,11 @@ type Queue struct {
 //MsgCon a struct with a MsgBuffer and Connection related to it
 type MsgCon struct {
 	msg     *indismqgo.MsgBuffer
-	conn    indismqgo.Sender
+	conn    indismqgo.Connection
 	timeout *time.Time
 }
 
-func (q *Queue) QueuePut(msg *indismqgo.MsgBuffer, conn indismqgo.Sender) {
+func (q *Queue) QueuePut(msg *indismqgo.MsgBuffer, conn indismqgo.Connection) {
 	q.Lock()
 	q.queue = append(q.queue, &MsgCon{msg: msg, conn: conn})
 	q.Unlock()
@@ -71,7 +71,7 @@ func (q *Queue) QueueReput(msgId string) {
 	q.queue = append(q.queue, queued)
 
 }
-func (q *Queue) QueueAck(msgId string, replyConn indismqgo.Sender) {
+func (q *Queue) QueueAck(msgId string, replyConn indismqgo.Connection) {
 	queued := q.dequeue[msgId]
 	if queued.msg.Fields.Callback() == 1 {
 		q.reply[msgId] = queued

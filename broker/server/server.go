@@ -18,7 +18,7 @@ func main() {
 	debug := true
 	srv.Debug(&debug)
 	// Create A Handler for the /test path
-	srv.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
+	srv.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
 		//defer wg.Done()
 		log.Println("/test message recieved")
 		if string(m.Fields.From()) != "client" {

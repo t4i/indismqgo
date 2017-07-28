@@ -18,7 +18,7 @@ func Example_http() {
 	srv.Debug(&debug)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	srv.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
+	srv.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
 		defer wg.Done()
 		if string(m.Fields.From()) != "client" {
 			log.Fatal("Message Error")

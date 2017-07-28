@@ -26,13 +26,13 @@ type Broker struct {
 	//indismqgo.ContextImpl
 }
 
-// func (s *Server) NewConnectionType(name string, defaultSender SenderFunc, authHandler AuthHandlerFunc) {
-// 	s.ConnectionTypes[name] = &ConnectionType{Name: name, DefaultSender: defaultSender, AuthHandler: authHandler}
+// func (s *Server) NewConnectionType(name string, defaultConnection ConnectionFunc, authHandler AuthHandlerFunc) {
+// 	s.ConnectionTypes[name] = &ConnectionType{Name: name, DefaultConnection: defaultConnection, AuthHandler: authHandler}
 // }
 var _ indismqgo.QueueStore = (*Broker)(nil)
 var _ indismqgo.MessageStore = (*Broker)(nil)
 var _ indismqgo.HandlerStore = (*Broker)(nil)
-var _ indismqgo.SenderStore = (*Broker)(nil)
+var _ indismqgo.ConnectionStore = (*Broker)(nil)
 var _ indismqgo.Subscribers = (*Broker)(nil)
 
 //NewServer ...
@@ -59,14 +59,14 @@ func (c *Broker) Debug(set *bool) bool {
 	return c.debug
 }
 
-func (c *Broker) Recieve(m *indismqgo.MsgBuffer, conn indismqgo.Sender) error {
+func (c *Broker) Recieve(m *indismqgo.MsgBuffer, conn indismqgo.Connection) error {
 	return indismqgo.Process(c, m, conn)
 }
 
-func (c *Broker) RecieveRaw(data []byte, conn indismqgo.Sender) error {
+func (c *Broker) RecieveRaw(data []byte, conn indismqgo.Connection) error {
 	return indismqgo.ProcessRaw(c, data, conn)
 }
-func (b *Broker) ProcessNext(q *queue.Queue, conn indismqgo.Sender) {
+func (b *Broker) ProcessNext(q *queue.Queue, conn indismqgo.Connection) {
 	// stat := q.Stats()
 	// if b.Debug(nil) {
 	// 	log.Println(string(b.Name(nil)), q, "queue len", stat.Queue, "reply len", stat.Reply, "dequeue len", stat.Dequeue, "prefetch", stat.Prefetch)
@@ -119,25 +119,25 @@ func (b *Broker) ProcessNext(q *queue.Queue, conn indismqgo.Sender) {
 	// }
 }
 
-func (b *Broker) OnConnection(m *indismqgo.MsgBuffer, conn indismqgo.Sender) (ok bool) {
-	//b.Connections.SetSender(string(m.Fields.From()), conn)
+func (b *Broker) OnConnection(m *indismqgo.MsgBuffer, conn indismqgo.Connection) (ok bool) {
+	//b.Connections.SetConnection(string(m.Fields.From()), conn)
 	return true
 }
 
-func (b *Broker) OnDisconnected(m *indismqgo.MsgBuffer, conn indismqgo.Sender) (ok bool) {
-	b.Connections.DelSender(string(m.Fields.From()))
+func (b *Broker) OnDisconnected(m *indismqgo.MsgBuffer, conn indismqgo.Connection) (ok bool) {
+	b.Connections.DelConnection(string(m.Fields.From()))
 	b.Subscribers.DelSubscriberAll(string(m.Fields.From()))
 	return true
 }
 
-func (b *Broker) OnSubscribe(m *indismqgo.MsgBuffer, conn indismqgo.Sender) (ok bool) {
+func (b *Broker) OnSubscribe(m *indismqgo.MsgBuffer, conn indismqgo.Connection) (ok bool) {
 	b.Subscribers.AddSubscriber(string(m.Fields.From()), string(m.Fields.Path()))
 	return true
 }
-func (b *Broker) OnUnSubscribe(m *indismqgo.MsgBuffer, conn indismqgo.Sender) {
+func (b *Broker) OnUnSubscribe(m *indismqgo.MsgBuffer, conn indismqgo.Connection) {
 	b.Subscribers.DelSubscriber(string(m.Fields.From()), string(m.Fields.Path()))
 }
-func (b *Broker) OnUnknown(m *indismqgo.MsgBuffer, conn indismqgo.Sender) (ok bool) {
+func (b *Broker) OnUnknown(m *indismqgo.MsgBuffer, conn indismqgo.Connection) (ok bool) {
 
 	return true
 }

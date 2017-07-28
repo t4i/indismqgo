@@ -27,7 +27,7 @@ const (
 	pingPeriodHTTP = (pongWaitHTTP * 9) / 10
 )
 
-var _ indismqgo.Sender = (*HttpConn)(nil)
+var _ indismqgo.Connection = (*HttpConn)(nil)
 
 type Events struct {
 	// OnBeforeConnected func(conn *HttpConn, req *http.Request) bool
@@ -140,7 +140,7 @@ func (conn *HttpConn) Send(m *indismqgo.MsgBuffer) error {
 func ConnectHttp(ctx indismqgo.Context, conn *HttpConn) (ok bool, err error) {
 	//conn := ctx.NewConnType(ctx.SendHttpMessage, indismq.ConnClassHalfDuplex)
 
-	connectMsg, err := indismqgo.NewCtxConnectionMsg(ctx, nil, nil, func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
+	connectMsg, err := indismqgo.NewCtxConnectionMsg(ctx, nil, nil, func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
 		log.Println("connected", string(m.Fields.From()))
 
 		return nil

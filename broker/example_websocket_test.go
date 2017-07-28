@@ -25,7 +25,7 @@ func Example_websocket() {
 	// 	return true
 	// }
 	// Create A Handler for the /test path
-	srv.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
+	srv.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
 		defer wg.Done()
 		time.Sleep(time.Millisecond * 10)
 		if string(m.Fields.From()) != "client" {

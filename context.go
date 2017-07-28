@@ -8,11 +8,11 @@ import (
 )
 
 type Context interface {
-	Recieve(m *MsgBuffer, conn Sender) error
-	RecieveRaw(data []byte, conn Sender) error
+	Recieve(m *MsgBuffer, conn Connection) error
+	RecieveRaw(data []byte, conn Connection) error
 	Name([]byte) []byte
 	Debug(*bool) bool
-	//ProcessQueue(q *Queue, conn Sender)
+	//ProcessQueue(q *Queue, conn Connection)
 }
 
 type ContextImpl struct {
@@ -34,19 +34,19 @@ func (c *ContextImpl) Debug(set *bool) bool {
 	return c.debug
 }
 
-func (c *ContextImpl) Recieve(m *MsgBuffer, conn Sender) error {
+func (c *ContextImpl) Recieve(m *MsgBuffer, conn Connection) error {
 	return Process(c, m, conn)
 }
 
-func (c *ContextImpl) RecieveRaw(data []byte, conn Sender) error {
+func (c *ContextImpl) RecieveRaw(data []byte, conn Connection) error {
 	return ProcessRaw(c, data, conn)
 }
 
-func ProcessRaw(ctx Context, data []byte, conn Sender) error {
+func ProcessRaw(ctx Context, data []byte, conn Connection) error {
 	m := ParseMsg(data, ctx)
 	return Process(ctx, m, conn)
 }
-func Process(ctx Context, m *MsgBuffer, conn Sender) error {
+func Process(ctx Context, m *MsgBuffer, conn Connection) error {
 	if m == nil {
 		//return error?
 		return errors.New("Empty Message ")
@@ -78,8 +78,8 @@ func Process(ctx Context, m *MsgBuffer, conn Sender) error {
 			impl = true
 		}
 		//Check known connections
-		if c, ok := ctx.(SenderStore); ok {
-			if send := c.GetSender(string(m.Fields.To())); send != nil {
+		if c, ok := ctx.(ConnectionStore); ok {
+			if send := c.GetConnection(string(m.Fields.To())); send != nil {
 				return send.Send(m)
 			}
 		}
@@ -158,8 +158,8 @@ func Process(ctx Context, m *MsgBuffer, conn Sender) error {
 			}
 			impl = true
 		}
-		if c, ok := ctx.(SenderStore); ok {
-			c.SetSender(string(m.Fields.From()), conn)
+		if c, ok := ctx.(ConnectionStore); ok {
+			c.SetConnection(string(m.Fields.From()), conn)
 			impl = true
 		}
 		// if q, ok := ctx.(QueueStore); ok {
@@ -187,7 +187,7 @@ func Process(ctx Context, m *MsgBuffer, conn Sender) error {
 		if s, ok := ctx.(Subscribers); ok {
 			subs := s.GetSubscriberList(string(m.Fields.Path()))
 			for k := range subs {
-				subConn := s.GetSender(k)
+				subConn := s.GetConnection(k)
 				if subConn != nil {
 					err := subConn.Send(m)
 					if err != nil {
@@ -212,7 +212,7 @@ func Process(ctx Context, m *MsgBuffer, conn Sender) error {
 					return err
 				}
 			} else {
-				r, err := MakeCtxReply(ctx, m, StatusNotFound, []byte(StatusText(StatusNotFound)))
+				r, err := MakeCtxReply(ctx, m, StatusNotFound, []byte("Handler Not Found"))
 				if err != nil {
 					return err
 				}
@@ -225,7 +225,7 @@ func Process(ctx Context, m *MsgBuffer, conn Sender) error {
 
 }
 
-func sendNotImplemented(ctx Context, m *MsgBuffer, conn Sender, msg string) error {
+func sendNotImplemented(ctx Context, m *MsgBuffer, conn Connection, msg string) error {
 	r, _ := MakeCtxReply(ctx, m, StatusNotImplemented, []byte(msg+" not implemented"))
 	return conn.Send(r)
 }

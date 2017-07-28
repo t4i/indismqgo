@@ -28,7 +28,7 @@ const (
 	pingPeriodWs = (pongWaitWs * 9) / 10
 )
 
-var _ indismqgo.Sender = (*WsConn)(nil)
+var _ indismqgo.Connection = (*WsConn)(nil)
 
 type Events struct {
 	OnBeforeConnected func(ws *WsConn, req *http.Request) bool
@@ -38,6 +38,7 @@ type Events struct {
 }
 
 type WsConn struct {
+	Name    string
 	Context indismqgo.Context
 	queue   []*indismqgo.MsgBuffer
 	Claims  map[string]string
@@ -46,7 +47,7 @@ type WsConn struct {
 	Events
 }
 
-func NewWsConnection(s indismqgo.Context, ws *websocket.Conn, ev *Events) *WsConn {
+func NewWsConnection(s indismqgo.Context, name string, ws *websocket.Conn, ev *Events) *WsConn {
 	conn := &WsConn{Context: s}
 	conn.Conn = ws
 	if ev != nil {
@@ -119,7 +120,7 @@ func (ws *WsConn) dialWebsocket(u string, header http.Header) {
 func (ws *WsConn) finishConnection() {
 	recieveQuit := make(chan bool)
 	go ws.recieveWs(recieveQuit)
-	connectMsg, err := indismqgo.NewCtxConnectionMsg(ws.Context, nil, nil, func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
+	connectMsg, err := indismqgo.NewCtxConnectionMsg(ws.Context, nil, nil, func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
 		if ws.Context.Debug(nil) {
 			log.Print(m.String())
 		}
@@ -128,6 +129,7 @@ func (ws *WsConn) finishConnection() {
 			if ws.Context.Debug(nil) {
 				log.Println("connected", from)
 			}
+			ws.Name = string(m.Fields.From())
 			if ws.OnConnected != nil {
 				ws.OnConnected(m, ws)
 			}
@@ -148,7 +150,7 @@ func (ws *WsConn) finishConnection() {
 
 //Connect ...
 func ConnectWebsocket(s indismqgo.Context, URL *url.URL, header http.Header, ev *Events, reconnect bool) (*WsConn, error) {
-	ws := NewWsConnection(s, nil, ev)
+	ws := NewWsConnection(s, "", nil, ev)
 	if reconnect {
 		oldOnDis := ws.OnDisconnected
 		ws.OnDisconnected = func(ws *WsConn) {
@@ -173,7 +175,7 @@ func upgrade(s indismqgo.Context, w http.ResponseWriter, r *http.Request, ev *Ev
 	if s.Debug(nil) {
 		log.Println("upgrade req")
 	}
-	ws := NewWsConnection(s, nil, ev)
+	ws := NewWsConnection(s, "", nil, ev)
 	if ws.OnBeforeConnected != nil {
 		if !ws.OnBeforeConnected(ws, r) {
 			http.Error(w, "Not Authorized", http.StatusUnauthorized)

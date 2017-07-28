@@ -3,7 +3,7 @@ package indismqgo
 import ()
 
 //Handler
-type Handler func(*MsgBuffer, Sender) error
+type Handler func(*MsgBuffer, Connection) error
 
 type HandlerStore interface {
 	GetHandler(key string) Handler
@@ -18,34 +18,34 @@ type MessageStore interface {
 
 type QueueStore interface {
 	ProcessTimeout()
-	// PutQueue(msg *MsgBuffer, conn Sender)
+	// PutQueue(msg *MsgBuffer, conn Connection)
 	// PopQueue()
 	// GetQueue(key string) Queue
 	// GetQueueOrNew(key string) Queue
 	// DelQueue(key string)
-	// AckQueue(key string, conn Sender)
+	// AckQueue(key string, conn Connection)
 	//SetQueue(key string, q Queue)
-	// PutQueue(msg *MsgBuffer, conn Sender) (queue Queue)
-	// PutQueueReply(msg *MsgBuffer, conn Sender) (queue Queue)
-	// GetQueueReply(m *MsgBuffer) (msg *MsgBuffer, conn Sender, queue Queue)
+	// PutQueue(msg *MsgBuffer, conn Connection) (queue Queue)
+	// PutQueueReply(msg *MsgBuffer, conn Connection) (queue Queue)
+	// GetQueueReply(m *MsgBuffer) (msg *MsgBuffer, conn Connection, queue Queue)
 	ProcessQueue(key string)
 }
 
 // type Queue interface {
-// 	QueuePut(msg *MsgBuffer, conn Sender)
+// 	QueuePut(msg *MsgBuffer, conn Connection)
 // 	// QueuePop() interface{}
 // 	// QueuePeek() interface{}
 // 	//QueueDel(key string)
-// 	QueueAck(key string, conn Sender)
+// 	QueueAck(key string, conn Connection)
 // }
-type Sender interface {
+type Connection interface {
 	Send(m *MsgBuffer) error
 }
 
-type SenderStore interface {
-	GetSender(key string) Sender
-	SetSender(key string, val Sender)
-	DelSender(key string)
+type ConnectionStore interface {
+	GetConnection(key string) Connection
+	SetConnection(key string, val Connection)
+	DelConnection(key string)
 }
 
 type SubscriberStore interface {
@@ -57,23 +57,23 @@ type SubscriberStore interface {
 	GetSubscriberList(key string) map[string]bool
 }
 type Subscribers interface {
-	SenderStore
+	ConnectionStore
 	SubscriberStore
 }
 
 //for context
 type OnConnection interface {
-	OnConnection(m *MsgBuffer, conn Sender) (ok bool)
+	OnConnection(m *MsgBuffer, conn Connection) (ok bool)
 }
 type OnMessage interface {
-	OnMessage(m *MsgBuffer, conn Sender) (ok bool)
+	OnMessage(m *MsgBuffer, conn Connection) (ok bool)
 }
 
 type OnUnknown interface {
-	OnUnknown(m *MsgBuffer, conn Sender) (queue bool)
+	OnUnknown(m *MsgBuffer, conn Connection) (queue bool)
 }
 
 type Subscriber interface {
-	OnSubscribe(m *MsgBuffer, conn Sender) (ok bool)
-	OnUnsubscribe(m *MsgBuffer, conn Sender)
+	OnSubscribe(m *MsgBuffer, conn Connection) (ok bool)
+	OnUnsubscribe(m *MsgBuffer, conn Connection)
 }

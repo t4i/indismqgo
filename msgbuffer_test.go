@@ -14,7 +14,7 @@ func init() {
 	m, err = NewMsgBuffer(
 		[]byte("messageid"), 1, 2, []byte("to"), []byte("from"), []byte("path"),
 		[]byte("authorization"), []byte("body"), map[string]string{"key": "value"},
-		func(msg *MsgBuffer, conn Sender) error {
+		func(msg *MsgBuffer, conn Connection) error {
 			if msg != m {
 				return errors.New("msg not equal in callback")
 			}

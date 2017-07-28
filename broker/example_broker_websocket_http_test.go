@@ -36,7 +36,7 @@ func Example_brokerWebsocketHttp() {
 		client1Conn.Send(m)
 	}
 
-	client.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, conn indismqgo.Sender) error {
+	client.Handlers.SetHandler("/test", func(m *indismqgo.MsgBuffer, conn indismqgo.Connection) error {
 		if string(m.Fields.From()) != "client2" {
 			log.Fatal("Client Message Error")
 		}
@@ -68,7 +68,7 @@ func Example_brokerWebsocketHttp() {
 	}
 	//http.ConnectHttp(client2, conn2)
 	//send the server a test message to client 1 and expect a reply
-	m, _ := client2.NewMsgObject("client1", indismqgo.ActionGET, "/test", []byte("Hello From Client 2"), func(m *indismqgo.MsgBuffer, c indismqgo.Sender) error {
+	m, _ := client2.NewMsgObject("client1", indismqgo.ActionGET, "/test", []byte("Hello From Client 2"), func(m *indismqgo.MsgBuffer, c indismqgo.Connection) error {
 		defer wg.Done()
 		if string(m.Fields.From()) != "client1" {
 			log.Fatal("Message Error")
