@@ -1,7 +1,5 @@
 package indismqgo
 
-import ()
-
 //Handler
 type Handler func(*MsgBuffer, Connection) error
 
@@ -64,6 +62,7 @@ type Subscribers interface {
 //for context
 type OnConnection interface {
 	OnConnection(m *MsgBuffer, conn Connection) (ok bool)
+	OnDisconnected(m *MsgBuffer, conn Connection) (ok bool)
 }
 type OnMessage interface {
 	OnMessage(m *MsgBuffer, conn Connection) (ok bool)
