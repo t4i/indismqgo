@@ -3,11 +3,12 @@ package websocket
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/t4i/indismqgo"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/websocket"
+	"github.com/t4i/indismqgo"
 	//"sync"
 	"net/url"
 	"sync"
@@ -31,10 +32,10 @@ const (
 var _ indismqgo.Connection = (*WsConn)(nil)
 
 type Events struct {
-	OnBeforeConnected func(ws *WsConn, req *http.Request) bool
-	OnConnected       func(m *indismqgo.MsgBuffer, ws *WsConn) bool
+	OnBeforeConnected func(ws *WsConn, req *http.Request) error
+	OnConnected       func(m *indismqgo.MsgBuffer, ws *WsConn) error
 	OnDisconnected    func(ws *WsConn)
-	OnMessage         func(m *indismqgo.MsgBuffer, ws *WsConn) bool
+	OnMessage         func(m *indismqgo.MsgBuffer, ws *WsConn) error
 }
 
 type WsConn struct {
@@ -47,7 +48,7 @@ type WsConn struct {
 	Events
 }
 
-func NewWsConnection(s indismqgo.Context, name string, ws *websocket.Conn, ev *Events) *WsConn {
+func NewWsConnection(s indismqgo.Context, ws *websocket.Conn, ev *Events) *WsConn {
 	conn := &WsConn{Context: s}
 	conn.Conn = ws
 	if ev != nil {
@@ -133,6 +134,9 @@ func (ws *WsConn) finishConnection() {
 			if ws.OnConnected != nil {
 				ws.OnConnected(m, ws)
 			}
+			if onConnection, ok := ws.Context.(indismqgo.OnConnection); ok {
+				onConnection.OnConnection(m, ws)
+			}
 
 		} else {
 			log.Println("error connecting", indismqgo.StatusText(int(m.Fields.Status())))
@@ -150,7 +154,7 @@ func (ws *WsConn) finishConnection() {
 
 //Connect ...
 func ConnectWebsocket(s indismqgo.Context, URL *url.URL, header http.Header, ev *Events, reconnect bool) (*WsConn, error) {
-	ws := NewWsConnection(s, "", nil, ev)
+	ws := NewWsConnection(s, nil, ev)
 	if reconnect {
 		oldOnDis := ws.OnDisconnected
 		ws.OnDisconnected = func(ws *WsConn) {
@@ -175,9 +179,9 @@ func upgrade(s indismqgo.Context, w http.ResponseWriter, r *http.Request, ev *Ev
 	if s.Debug(nil) {
 		log.Println("upgrade req")
 	}
-	ws := NewWsConnection(s, "", nil, ev)
+	ws := NewWsConnection(s, nil, ev)
 	if ws.OnBeforeConnected != nil {
-		if !ws.OnBeforeConnected(ws, r) {
+		if err := ws.OnBeforeConnected(ws, r); err != nil {
 			http.Error(w, "Not Authorized", http.StatusUnauthorized)
 		}
 	}
@@ -200,7 +204,9 @@ func (conn *WsConn) recieveWs(quit chan bool) {
 		if conn.OnDisconnected != nil {
 			conn.OnDisconnected(conn)
 		}
-
+		if onConnection, ok := conn.Context.(indismqgo.OnConnection); ok {
+			onConnection.OnDisconnected(nil, conn)
+		}
 	}()
 
 	readerr := make(chan error)
@@ -217,7 +223,7 @@ func (conn *WsConn) recieveWs(quit chan bool) {
 			go func() {
 				m := indismqgo.ParseMsg(message, conn.Context)
 				if conn.OnMessage != nil {
-					if !conn.OnMessage(m, conn) {
+					if conn.OnMessage(m, conn) != nil {
 						return
 					}
 				}
@@ -264,8 +270,13 @@ func (conn *WsConn) recieveWs(quit chan bool) {
 	}
 }
 
+type ImqWsServer struct {
+	http.Server
+	Mux *http.ServeMux
+}
+
 //Listen ...
-func ListenWebSocket(s indismqgo.Context, path string, port int, ev *Events) {
+func NewImqWsServer(s indismqgo.Context, path string, port int, config *tls.Config, ev *Events) *ImqWsServer {
 	if s.Debug(nil) {
 		log.Println("starting ws", string(s.Name(nil)))
 	}
@@ -273,30 +284,14 @@ func ListenWebSocket(s indismqgo.Context, path string, port int, ev *Events) {
 	ContextMux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		upgrade(s, w, r, ev)
 	})
-	log.Println(http.ListenAndServe(":"+strconv.Itoa(port), ContextMux).Error())
-}
 
-//ListenTLS ...
-func ListenWebsocketTLS(s indismqgo.Context, path string, port int, certFile string, keyFile string, config *tls.Config, ev *Events) {
-	if s.Debug(nil) {
-		log.Println("starting wss", string(s.Name(nil)))
+	return &ImqWsServer{
+		Server: http.Server{
+			Addr:      ":" + strconv.Itoa(port),
+			TLSConfig: config,
+			Handler:   ContextMux,
+		},
+		Mux: ContextMux,
 	}
-	ContextMux := http.NewServeMux()
-	ContextMux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		upgrade(s, w, r, ev)
-	})
-	srv := &http.Server{
-		Addr:      ":" + strconv.Itoa(port),
-		TLSConfig: config,
-		Handler:   ContextMux,
-	}
-	//s.GetCertificate = config.GetCertificate
-	go func() {
-		err := srv.ListenAndServeTLS(certFile, keyFile).Error()
-		if s.Debug(nil) {
-			log.Printf("%s-%s-%s", path, strconv.Itoa(port))
-			log.Println("TLS Context Error: " + err)
-		}
-	}()
 
 }

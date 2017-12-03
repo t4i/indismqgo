@@ -2,13 +2,14 @@ package broker
 
 import (
 	"fmt"
-	"github.com/t4i/indismqgo"
-	"github.com/t4i/indismqgo/broker/http"
-	"github.com/t4i/indismqgo/broker/websocket"
 	"log"
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/t4i/indismqgo"
+	"github.com/t4i/indismqgo/broker/http"
+	"github.com/t4i/indismqgo/broker/websocket"
 )
 
 func Example_brokerWebsocketHttp() {
@@ -22,7 +23,7 @@ func Example_brokerWebsocketHttp() {
 	srv.Debug(&debug)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	go websocket.ListenWebSocket(srv, "/", 8085, nil)
+	go websocket.NewImqWsServer(srv, "/", 8085, nil, nil).ListenAndServe()
 	go http.ListenHttp(srv, "/", 8086, nil)
 	//
 	//Create a Clientd

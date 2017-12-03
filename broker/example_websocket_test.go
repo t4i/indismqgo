@@ -2,12 +2,13 @@ package broker
 
 import (
 	"fmt"
-	"github.com/t4i/indismqgo"
-	"github.com/t4i/indismqgo/broker/websocket"
 	"log"
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/t4i/indismqgo"
+	"github.com/t4i/indismqgo/broker/websocket"
 )
 
 func Example_websocket() {
@@ -34,7 +35,7 @@ func Example_websocket() {
 		fmt.Println("Test Called")
 		return nil
 	})
-	go websocket.ListenWebSocket(srv, "/", 8080, nil)
+	go websocket.NewImqWsServer(srv, "/", 8080, nil, nil).ListenAndServe()
 	time.Sleep(time.Millisecond * 100)
 	//
 	//Create a Client

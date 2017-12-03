@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"sync"
+
 	"github.com/t4i/indismqgo"
 	"github.com/t4i/indismqgo/broker"
 	"github.com/t4i/indismqgo/broker/websocket"
-	"log"
-	"sync"
 )
 
 func main() {
@@ -28,6 +29,6 @@ func main() {
 		fmt.Println("Recieved", string(m.Fields.BodyBytes()))
 		return nil
 	})
-	websocket.ListenWebSocket(srv, "/", 8080, nil)
+	websocket.NewImqWsServer(srv, "/", 8080, nil, nil).ListenAndServe()
 
 }
