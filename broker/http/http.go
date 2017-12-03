@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
-	"github.com/t4i/indismqgo"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/t4i/indismqgo"
 )
 
 const (
@@ -33,8 +34,8 @@ type Events struct {
 	// OnBeforeConnected func(conn *HttpConn, req *http.Request) bool
 	// OnConnected       func(m *indismqgo.MsgBuffer, conn *HttpConn) bool
 	// OnDisconnected    func(conn *HttpConn)
-	OnMessage       func(m *indismqgo.MsgBuffer, r *http.Request) bool
-	OnBeforeMessage func(r *http.Request) bool
+	OnMessage       func(m *indismqgo.MsgBuffer, r *http.Request) error
+	OnBeforeMessage func(r *http.Request) error
 }
 
 type HttpConn struct {
@@ -172,7 +173,7 @@ func receiveHttp(ctx indismqgo.Context, w http.ResponseWriter, r *http.Request, 
 		log.Println("receive http")
 	}
 	if ev != nil && ev.OnBeforeMessage != nil {
-		if !ev.OnBeforeMessage(r) {
+		if ev.OnBeforeMessage(r) != nil {
 			http.Error(w, "Unathorized", http.StatusUnauthorized)
 			return
 		}
@@ -189,7 +190,7 @@ func receiveHttp(ctx indismqgo.Context, w http.ResponseWriter, r *http.Request, 
 	}
 	m := indismqgo.ParseMsg(body, ctx)
 	if ev != nil && ev.OnMessage != nil {
-		if !ev.OnMessage(m, r) {
+		if ev.OnMessage(m, r) != nil {
 			http.Error(w, "Unathorized", http.StatusUnauthorized)
 			return
 		}
@@ -243,6 +244,12 @@ func ListenHttp(ctx indismqgo.Context, path string, port int, ev *Events) {
 		receiveHttp(ctx, w, r, ev)
 	})
 	log.Println(http.ListenAndServe(":"+strconv.Itoa(port), BrokerMux).Error())
+}
+
+func ContextHandler(ctx indismqgo.Context, ev *Events) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		receiveHttp(ctx, w, r, ev)
+	}
 }
 
 //ListenTLS ...

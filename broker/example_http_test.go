@@ -2,13 +2,14 @@ package broker
 
 import (
 	"fmt"
-	"github.com/t4i/indismqgo"
-	"github.com/t4i/indismqgo/broker/http"
 	"log"
 	h "net/http"
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/t4i/indismqgo"
+	"github.com/t4i/indismqgo/broker/http"
 )
 
 func Example_http() {
@@ -27,13 +28,13 @@ func Example_http() {
 		return nil
 	})
 	ev := &http.Events{}
-	ev.OnBeforeMessage = func(r *h.Request) bool {
+	ev.OnBeforeMessage = func(r *h.Request) error {
 		//log.Println(r)
-		return true
+		return nil
 	}
-	ev.OnMessage = func(m *indismqgo.MsgBuffer, r *h.Request) bool {
+	ev.OnMessage = func(m *indismqgo.MsgBuffer, r *h.Request) error {
 		//log.Println(m.String())
-		return true
+		return nil
 	}
 	go http.ListenHttp(srv, "/", 8081, ev)
 	//
