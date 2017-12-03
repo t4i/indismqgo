@@ -2,13 +2,14 @@ package broker
 
 import (
 	"crypto/tls"
+	"net/http"
+
 	"github.com/t4i/indismqgo"
 	"github.com/t4i/indismqgo/connections"
 	"github.com/t4i/indismqgo/handlers"
 	"github.com/t4i/indismqgo/messages"
 	"github.com/t4i/indismqgo/queue"
 	"github.com/t4i/indismqgo/subscribers"
-	"net/http"
 )
 
 //Server ...
@@ -34,6 +35,7 @@ var _ indismqgo.MessageStore = (*Broker)(nil)
 var _ indismqgo.HandlerStore = (*Broker)(nil)
 var _ indismqgo.ConnectionStore = (*Broker)(nil)
 var _ indismqgo.Subscribers = (*Broker)(nil)
+var _ indismqgo.Context = (*Broker)(nil)
 
 //NewServer ...
 func NewBroker(name string) *Broker {
